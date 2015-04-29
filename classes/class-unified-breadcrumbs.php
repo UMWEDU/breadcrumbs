@@ -71,7 +71,11 @@ class Unified_Breadcrumbs {
 		$this->bcargs = $args;
 		
 		$pre = $args['labels']['prefix'] . sprintf( '<a href="%1$s" title="%2$s">%2$s</a>', esc_url( $this->home_link ), $this->home_name );
-		$pre = $this->append_parents( $pre, $GLOBALS['blog_id'] );
+		/*$pre = $this->append_parents( $pre, $GLOBALS['blog_id'] );*/
+		
+		$parents = $this->append_parents( '', $GLOBALS['blog_id'] );
+		
+		$pre .= $parents;
 		
 		$args['labels']['prefix'] = $pre . $args['sep'];
 		
@@ -92,7 +96,7 @@ class Unified_Breadcrumbs {
 		
 		$this->parents[] = $parent;
 		$p = get_blog_details( $parent );
-		$pre .= $this->bcargs['sep'] . sprintf( '<a href="%1$s" title="%2$s">%2$s</a>', esc_url( sprintf( '//%1$s%2$s', $p->domain, $p->path ) ), $p->blogname );
+		$pre = $this->bcargs['sep'] . sprintf( '<a href="%1$s" title="%2$s">%2$s</a>', esc_url( sprintf( '//%1$s%2$s', $p->domain, $p->path ) ), $p->blogname ) . $pre;
 		error_log( '[UBC Debug]: Just added the details for the blog with an ID of ' . $parent . ' to the breadcrumbs' );
 		error_log( '[UBC Debug]: At this point, $pre looks like: ' . $pre );
 		
@@ -106,13 +110,13 @@ class Unified_Breadcrumbs {
 				return $blogs;
 		}
 		global $wpdb;
-		$tmp = $wpdb->get_results( "SELECT blog_id, domain, path FROM {$wpdb->blogs} ORDER BY domain" );
+		$tmp = $wpdb->get_results( "SELECT blog_id, domain, path FROM {$wpdb->blogs} ORDER BY domain, path ASC" );
 		$blogs = array();
 		foreach( $tmp as $blog ) {
 			$blogs[$blog->blog_id] = esc_url( $blog->domain . $blog->path );
 		}
 		if ( function_exists( 'set_mnetwork_transient' ) ) {
-			$blogs = set_mnetwork_transient( 'unified-bc-site-list', $blogs, DAY_IN_SECONDS );
+			set_mnetwork_transient( 'unified-bc-site-list', $blogs, DAY_IN_SECONDS );
 		}
 		return $blogs;
 	}
