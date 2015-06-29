@@ -8,7 +8,12 @@ class Unified_Breadcrumbs {
 	
 	function __construct() {
 		add_action( 'after_setup_theme', array( $this, 'after_setup_theme' ) );
-		$this->settings_field = 'genesis-settings';
+		if ( defined( 'GENESIS_SETTINGS_FIELD' ) )
+			$this->settings_field = GENESIS_SETTINGS_FIELD;
+		else
+			$this->settings_field = 'genesis-settings';
+			
+		/*add_filter( "sanitize_option_{$this->settings_field}", array( $this, 'temp_sanitize_setting' ), 10, 2 );*/
 	}
 	
 	function after_setup_theme() {
@@ -29,8 +34,14 @@ class Unified_Breadcrumbs {
 		
 		add_filter( 'genesis_breadcrumb_args', array( $this, 'breadcrumb_args' ) );
 		add_action( 'genesis_theme_settings_metaboxes', array( $this, 'metaboxes' ) );
-		add_action( 'genesis_settings_sanitizer_init', array( $this, 'sanitizer_filters' ) );
+		add_action( 'admin_init', array( $this, 'sanitizer_filters' ) );
+		add_filter( 'genesis_available_sanitizer_filters', array( $this, 'add_sanitizer_filter' ) );
 		add_filter( 'genesis_theme_settings_defaults', array( $this, 'settings_defaults' ) );
+	}
+	
+	function add_sanitizer_filter( $filters=array() ) {
+		$filters['umw_breadcrumb_filter'] = array( $this, 'temp_sanitize_setting' );
+		return $filters;
 	}
 	
 	function settings_defaults( $defaults=array() ) {
@@ -52,10 +63,10 @@ class Unified_Breadcrumbs {
 			)
 		);
 		genesis_add_option_filter( 
-			array( $this, 'temp_sanitize_setting' ), 
+			'umw_breadcrumb_filter', 
 			$this->settings_field, 
 			array( 
-				'_breadcrumb_list'
+				'_breadcrumb_list', 
 			)
 		);
 	}
@@ -192,24 +203,32 @@ class Unified_Breadcrumbs {
 		);
 		
 		foreach ( $names as $i=>$n ) {
+			$fieldname = $this->get_field_name( '_breadcrumb_list' ) . '[' . $i . '][%s]';
+			$fieldid = $this->get_field_id( '_breadcrumb_list' ) . '[' . $i . '][%s]';
 ?>
 <p>
-	<label for="<?php $this->field_id( sprintf( '_breadcrumb_list[%d][name]', $i ) ) ?>">
+	<label for="<?php printf( $fieldid, 'name' ) ?>">
 		<?php printf( $n, 'Name' ) ?>
 	</label>
-	<input type="text" name="<?php $this->field_name( sprintf( '_breadcrumb_list[%d][name]', $i ) ) ?>" id="<?php $this->field_id( sprintf( '_breadcrumb_list[%d][name]', $i ) ) ?>" value="<?php echo $current[$i]['name'] ?>"/>
+	<input type="text" name="<?php printf( $fieldname, 'name' ) ?>" id="<?php printf( $fieldid, 'name' ) ?>" value="<?php echo $current[$i]['name'] ?>"/>
 </p>
 <p>
-	<label for="<?php $this->field_id( sprintf( '_breadcrumb_list[%d][url]', $i ) ) ?>">
+	<label for="<?php printf( $fieldid, 'url' ) ?>">
 		<?php printf( $n, 'URL' ) ?>
 	</label>
-	<input type="url" name="<?php $this->field_name( sprintf( '_breadcrumb_list[%d][url]', $i ) ) ?>" id="<?php $this->field_id( sprintf( '_breadcrumb_list[%d][url]', $i ) ) ?>" value="<?php echo $current[$i]['url'] ?>"/>
+	<input type="url" name="<?php printf( $fieldname, 'url' ) ?>" id="<?php printf( $fieldid, 'url' ) ?>" value="<?php echo $current[$i]['url'] ?>"/>
 </p>
 <?php
 		}
 	}
 	
 	function temp_sanitize_setting( $val=array() ) {
+		if ( 4 == get_current_user_id() ) {
+			print( '<pre><code>' );
+			var_dump( $val );
+			print( '</code></pre>' );
+			wp_die( 'Stop here' );
+		}
 		return $val;
 	}
 }
