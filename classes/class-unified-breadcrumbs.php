@@ -1,6 +1,6 @@
 <?php
 class Unified_Breadcrumbs {
-	var $version = '0.1.1';
+	var $version = '0.1.2';
 	var $home_name = null;
 	var $home_link = null;
 	var $parents = array();
@@ -8,6 +8,7 @@ class Unified_Breadcrumbs {
 	
 	function __construct() {
 		add_action( 'after_setup_theme', array( $this, 'after_setup_theme' ) );
+		$this->settings_field = 'genesis-settings';
 	}
 	
 	function after_setup_theme() {
@@ -33,6 +34,7 @@ class Unified_Breadcrumbs {
 	}
 	
 	function settings_defaults( $defaults=array() ) {
+		$settings['_breadcrumb_list'] = array();
 		$settings['_breadcrumb_parent_site'] = 0;
 		return $settings;
 	}
@@ -47,6 +49,13 @@ class Unified_Breadcrumbs {
 			$this->settings_field,
 			array(
 				'_breadcrumb_parent_site',
+			)
+		);
+		genesis_add_option_filter( 
+			array( $this, 'temp_sanitize_setting' ), 
+			$this->settings_field, 
+			array( 
+				'_breadcrumb_list'
 			)
 		);
 	}
@@ -124,7 +133,7 @@ class Unified_Breadcrumbs {
 		$tmp = array_merge( $local_blog_list, $ext_blog_list );
 		$blogs = array();
 		foreach( $tmp as $blog ) {
-			$blogs[$blog->domain . $blog->path] = $blog->blogname . '[' . esc_url( $blog->domain . $blog->path ) . ']';
+			$blogs[$blog->domain . $blog->path] = $blog->blogname . ' [' . esc_url( $blog->domain . $blog->path ) . ']';
 		}
 		if ( function_exists( 'set_mnetwork_transient' ) ) {
 			set_mnetwork_transient( 'unified-bc-site-list-' . $this->version, $blogs, DAY_IN_SECONDS );
@@ -149,6 +158,8 @@ class Unified_Breadcrumbs {
 	}
 	
 	function breadcrumbs_box() {
+		return $this->temp_breadcrumbs_box();
+		
 		$current = $this->get_option( '_breadcrumb_parent_site' );
 		$sites = $this->get_site_list();
 		
@@ -170,5 +181,35 @@ class Unified_Breadcrumbs {
 </p>
 <p><span class="description"><?php _e( 'Please select the address of the site that serves as the parent of this site.', 'genesis' ); ?></span></p>
 <?php
+	}
+	
+	function temp_breadcrumbs_box() {
+		$current = $this->get_option( '_breadcrumb_list' );
+		$names = array(
+			1 => __( 'Top-Level Site %s' ), 
+			2 => __( 'Second-Level Site %s' ), 
+			3 => __( 'Third-Level Site %s' )
+		);
+		
+		foreach ( $names as $i=>$n ) {
+?>
+<p>
+	<label for="<?php $this->field_id( sprintf( '_breadcrumb_list[%d][name]', $i ) ) ?>">
+		<?php printf( $n, 'Name' ) ?>
+	</label>
+	<input type="text" name="<?php $this->field_name( sprintf( '_breadcrumb_list[%d][name]', $i ) ) ?>" id="<?php $this->field_id( sprintf( '_breadcrumb_list[%d][name]', $i ) ) ?>" value="<?php echo $current[$i]['name'] ?>"/>
+</p>
+<p>
+	<label for="<?php $this->field_id( sprintf( '_breadcrumb_list[%d][url]', $i ) ) ?>">
+		<?php printf( $n, 'URL' ) ?>
+	</label>
+	<input type="url" name="<?php $this->field_name( sprintf( '_breadcrumb_list[%d][url]', $i ) ) ?>" id="<?php $this->field_id( sprintf( '_breadcrumb_list[%d][url]', $i ) ) ?>" value="<?php echo $current[$i]['url'] ?>"/>
+</p>
+<?php
+		}
+	}
+	
+	function temp_sanitize_setting( $val=array() ) {
+		return $val;
 	}
 }
