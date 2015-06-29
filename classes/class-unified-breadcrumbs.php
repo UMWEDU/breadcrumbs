@@ -1,6 +1,6 @@
 <?php
 class Unified_Breadcrumbs {
-	var $version = '0.1a';
+	var $version = '0.1.1';
 	var $home_name = null;
 	var $home_link = null;
 	var $parents = array();
@@ -105,18 +105,29 @@ class Unified_Breadcrumbs {
 	
 	function get_site_list() {
 		if ( function_exists( 'get_mnetwork_transient' ) ) {
-			$blogs = get_mnetwork_transient( 'unified-bc-site-list' );
+			$blogs = get_mnetwork_transient( 'unified-bc-site-list-' . $this->version );
 			if ( false !== $blogs )
 				return $blogs;
 		}
 		global $wpdb;
-		$tmp = $wpdb->get_results( "SELECT blog_id, domain, path FROM {$wpdb->blogs} ORDER BY domain, path ASC" );
+		$local_blog_list = $wpdb->get_results( $wpdb->prepare( "SELECT blog_id, domain, path, public FROM {$wpdb->blogs} WHERE public >= %d AND archived=%d AND mature=%d AND spam=%d AND deleted=%d ORDER BY domain, path", 0, 0, 0, 0, 0 ) );
+		foreach( $local_blog_list as $b ) {
+			$b->blogname = get_blog_option( $b->blog_id, 'blogname' );
+		}
+		$request = wp_remote_get( 'http://academics.umw.edu/feed/site-feed.json' );
+		if ( 200 == wp_remote_retrieve_response_code( $request ) ) {
+			$ext_blog_list = @json_decode( wp_remote_retrieve_body( $request ) );
+		}
+		if ( ! isset( $ext_blog_list ) || empty( $ext_blog_list ) || ! is_array( $ext_blog_list ) ) {
+			$ext_blog_list = array();
+		}
+		$tmp = array_merge( $local_blog_list, $ext_blog_list );
 		$blogs = array();
 		foreach( $tmp as $blog ) {
-			$blogs[$blog->blog_id] = esc_url( $blog->domain . $blog->path );
+			$blogs[$blog->domain . $blog->path] = $blog->blogname . '[' . esc_url( $blog->domain . $blog->path ) . ']';
 		}
 		if ( function_exists( 'set_mnetwork_transient' ) ) {
-			set_mnetwork_transient( 'unified-bc-site-list', $blogs, DAY_IN_SECONDS );
+			set_mnetwork_transient( 'unified-bc-site-list-' . $this->version, $blogs, DAY_IN_SECONDS );
 		}
 		return $blogs;
 	}
