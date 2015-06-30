@@ -1,6 +1,6 @@
 <?php
 class Unified_Breadcrumbs {
-	var $version = '0.1.2';
+	var $version = '0.1.3';
 	var $home_name = null;
 	var $home_link = null;
 	var $parents = array();
@@ -12,8 +12,6 @@ class Unified_Breadcrumbs {
 			$this->settings_field = GENESIS_SETTINGS_FIELD;
 		else
 			$this->settings_field = 'genesis-settings';
-			
-		/*add_filter( "sanitize_option_{$this->settings_field}", array( $this, 'temp_sanitize_setting' ), 10, 2 );*/
 	}
 	
 	function after_setup_theme() {
@@ -103,6 +101,8 @@ class Unified_Breadcrumbs {
 	}
 	
 	function append_parents( $pre='', $blog_id=null ) {
+		return $this->manual_append_parents( $pre, $blog_id );
+		
 		$parent = $this->get_option( '_breadcrumb_parent_site', $blog_id, false );
 		if ( false === $parent || ! is_numeric( $parent ) ) {
 			error_log( '[UBC Debug]: The parent site was empty' );
@@ -121,6 +121,24 @@ class Unified_Breadcrumbs {
 		error_log( '[UBC Debug]: At this point, $pre looks like: ' . $pre );
 		
 		return $this->append_parents( $pre, $parent );
+	}
+	
+	function manual_append_parents( $pre='', $blog_id=null ) {
+		$parents = $this->get_option( '_breadcrumb_list' );
+		if ( empty( $parents ) || ! is_array( $parents ) ) {
+			return $pre;
+		}
+		
+		foreach ( array_reverse( $parents, true ) as $p ) {
+			if ( ! array_key_exists( 'name', $p ) || ! array_key_exists( 'url', $p ) )
+				continue;
+			
+			if ( ! empty( $p['name'] ) && esc_url( $p['url'] ) ) {
+				$pre = $this->bcargs['sep'] . sprintf( '<a href="%1$s" title="%2$s">%2$s</a>', esc_url( $p['url'] ), $p['name'] ) . $pre;
+			}
+		}
+		
+		return $pre;
 	}
 	
 	function get_site_list() {
@@ -223,12 +241,22 @@ class Unified_Breadcrumbs {
 	}
 	
 	function temp_sanitize_setting( $val=array() ) {
-		if ( 4 == get_current_user_id() ) {
+		if ( empty( $val ) )
+			return null;
+		
+		/*if ( 2 == get_current_user_id() ) {
 			print( '<pre><code>' );
 			var_dump( $val );
 			print( '</code></pre>' );
 			wp_die( 'Stop here' );
+		}*/
+		
+		$rt = array();
+		foreach ( $val as $k=>$v ) {
+			if ( ! empty( $v['name'] ) && esc_url( $v['url'] ) ) {
+				$rt[$k] = array( 'name' => esc_attr( $v['name'] ), 'url' => esc_url( $v['url'] ) );
+			}
 		}
-		return $val;
+		return $rt;
 	}
 }
