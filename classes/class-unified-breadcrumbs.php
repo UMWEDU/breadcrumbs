@@ -30,6 +30,13 @@ class Unified_Breadcrumbs {
 		$this->home_name = __( 'UMW' );
 		$this->home_link = 'http://www.umw.edu/';
 		
+		/**
+		 * Temporarily fix the breadcrumb link on our development environment
+		 */
+		if ( stristr( $_SERVER['HTTP_HOST'], 'wpengine.com' ) ) {
+			$this->home_link = '/';
+		}
+		
 		add_filter( 'genesis_breadcrumb_args', array( $this, 'breadcrumb_args' ) );
 		add_action( 'genesis_theme_settings_metaboxes', array( $this, 'metaboxes' ) );
 		add_action( 'admin_init', array( $this, 'sanitizer_filters' ) );
