@@ -95,7 +95,7 @@ class Unified_Breadcrumbs {
 		$this->bcargs = $args;
 		
 		if ( defined( 'UMW_IS_HOME' ) && is_numeric( UMW_IS_HOME ) && $GLOBALS['blog_id'] == UMW_IS_HOME ) {
-			$pre = $args['labels']['prefix'];
+			$pre = '';
 		} else {
 			$pre = $args['labels']['prefix'] . sprintf( '<a href="%1$s" title="%2$s">%2$s</a>', esc_url( $this->home_link ), $this->home_name );
 		}
