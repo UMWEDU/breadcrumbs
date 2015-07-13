@@ -28,11 +28,11 @@ class Unified_Breadcrumbs {
 			return;
 		
 		$this->home_name = __( 'UMW' );
-		if ( defined( 'UMW_IS_HOME' ) ) {
-			if ( is_numeric( UMW_IS_HOME ) ) {
-				$this->home_link = get_blog_details( UMW_IS_HOME, 'siteurl' );
-			} else if ( esc_url( UMW_IS_HOME ) ) {
-				$this->home_link = esc_url( UMW_IS_HOME );
+		if ( defined( 'UMW_IS_ROOT' ) ) {
+			if ( is_numeric( UMW_IS_ROOT ) ) {
+				$this->home_link = get_blog_option( UMW_IS_ROOT, 'siteurl' );
+			} else if ( esc_url( UMW_IS_ROOT ) ) {
+				$this->home_link = esc_url( UMW_IS_ROOT );
 			}
 		}
 		
@@ -94,7 +94,7 @@ class Unified_Breadcrumbs {
 		
 		$this->bcargs = $args;
 		
-		if ( defined( 'UMW_IS_HOME' ) && is_numeric( UMW_IS_HOME ) && $GLOBALS['blog_id'] == UMW_IS_HOME ) {
+		if ( defined( 'UMW_IS_ROOT' ) && is_numeric( UMW_IS_ROOT ) && $GLOBALS['blog_id'] == UMW_IS_ROOT ) {
 			$pre = '';
 		} else {
 			$pre = $args['labels']['prefix'] . sprintf( '<a href="%1$s" title="%2$s">%2$s</a>', esc_url( $this->home_link ), $this->home_name );
@@ -104,8 +104,8 @@ class Unified_Breadcrumbs {
 		$parents = $this->append_parents( '', $GLOBALS['blog_id'] );
 		
 		$pre .= $parents;
-		
-		$args['labels']['prefix'] = $pre . $args['sep'];
+		if ( ! empty( $pre ) )
+			$args['labels']['prefix'] = $pre . $args['sep'];
 		
 		return $args;
 	}
