@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Unified Breadcrumbs
  * Description: Creates a unified breadcrumb hierarchy throughout a multisite or multi-network environment
- * Version: 0.1.3
+ * Version: 0.1.4
  * Author: cgrymala
  * License: GPL2
  */

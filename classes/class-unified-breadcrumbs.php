@@ -1,6 +1,6 @@
 <?php
 class Unified_Breadcrumbs {
-	var $version = '0.1.3';
+	var $version = '0.1.4';
 	var $home_name = null;
 	var $home_link = null;
 	var $parents = array();
@@ -28,13 +28,12 @@ class Unified_Breadcrumbs {
 			return;
 		
 		$this->home_name = __( 'UMW' );
-		$this->home_link = 'http://www.umw.edu/';
-		
-		/**
-		 * Temporarily fix the breadcrumb link on our development environment
-		 */
-		if ( stristr( $_SERVER['HTTP_HOST'], 'wpengine.com' ) ) {
-			$this->home_link = '/';
+		if ( defined( 'UMW_IS_HOME' ) ) {
+			if ( is_numeric( UMW_IS_HOME ) ) {
+				$this->home_link = get_blog_details( UMW_IS_HOME, 'siteurl' );
+			} else if ( esc_url( UMW_IS_HOME ) ) {
+				$this->home_link = esc_url( UMW_IS_HOME );
+			}
 		}
 		
 		add_filter( 'genesis_breadcrumb_args', array( $this, 'breadcrumb_args' ) );
@@ -95,7 +94,11 @@ class Unified_Breadcrumbs {
 		
 		$this->bcargs = $args;
 		
-		$pre = $args['labels']['prefix'] . sprintf( '<a href="%1$s" title="%2$s">%2$s</a>', esc_url( $this->home_link ), $this->home_name );
+		if ( defined( 'UMW_IS_HOME' ) && is_numeric( UMW_IS_HOME ) && $GLOBALS['blog_id'] == UMW_IS_HOME ) {
+			$pre = $args['labels']['prefix'];
+		} else {
+			$pre = $args['labels']['prefix'] . sprintf( '<a href="%1$s" title="%2$s">%2$s</a>', esc_url( $this->home_link ), $this->home_name );
+		}
 		/*$pre = $this->append_parents( $pre, $GLOBALS['blog_id'] );*/
 		
 		$parents = $this->append_parents( '', $GLOBALS['blog_id'] );
