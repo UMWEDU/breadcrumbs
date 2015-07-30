@@ -224,6 +224,17 @@ class Unified_Breadcrumbs {
 	
 	function temp_breadcrumbs_box() {
 		$current = $this->get_option( '_breadcrumb_list' );
+		foreach ( $current as $k => $v ) {
+			if ( ! is_array( $v ) ) {
+				$current[$k] = array( 'name' => '', 'url' => '' );
+				continue;
+			}
+			
+			if ( ! array_key_exists( 'name', $v ) )
+				$current[$k]['name'] = '';
+			if ( ! array_key_exists( 'url', $v ) )
+				$current[$k]['url'] = '';
+		}
 		$names = array(
 			1 => __( 'Top-Level Site %s' ), 
 			2 => __( 'Second-Level Site %s' ), 
