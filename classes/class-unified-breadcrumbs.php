@@ -224,6 +224,9 @@ class Unified_Breadcrumbs {
 	
 	function temp_breadcrumbs_box() {
 		$current = $this->get_option( '_breadcrumb_list' );
+		if ( ! is_array( $current ) ) {
+			$current = array_fill( 0, 3, array( 'name' => '', 'url' => '' ) );
+		}
 		foreach ( $current as $k => $v ) {
 			if ( ! is_array( $v ) ) {
 				$current[$k] = array( 'name' => '', 'url' => '' );
