@@ -238,6 +238,13 @@ class Unified_Breadcrumbs {
 			if ( ! array_key_exists( 'url', $v ) )
 				$current[$k]['url'] = '';
 		}
+		if ( count( $current ) < 3 ) {
+			for ( $i = 0; $i<=2; $i++ ) {
+				if ( ! array_key_exists( $i, $current ) ) {
+					$current[$i] = array( 'name' => '', 'url' => '' );
+				}
+			}
+		}
 		$names = array(
 			1 => __( 'Top-Level Site %s' ), 
 			2 => __( 'Second-Level Site %s' ), 
