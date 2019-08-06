@@ -40,7 +40,12 @@ class Unified_Breadcrumbs {
 
 		    unset( $allopts['_breadcrumb_list'] );
 
-		    genesis_update_settings( $new, $this->settings_field );
+		    if ( function_exists( 'genesis_update_settings' ) ) {
+			    genesis_update_settings( $new, $this->settings_field );
+		    } else {
+		    	update_option( $this->settings_field, $new );
+		    }
+
 		    update_option( $tmp_settings_field, $allopts );
 	    } else {
 	        $allopts = get_blog_option( $blog, $tmp_settings_field, array() );
