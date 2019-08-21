@@ -32,7 +32,7 @@ class Unified_Breadcrumbs {
 			    return;
 		    }
 
-		    $new = array();
+		    $new = get_option( $this->settings_field, array() );
 		    foreach ( $allopts['_breadcrumb_list'] as $k => $v ) {
 			    $new[ 'breadcrumb-' . $k . '-name' ] = $v['name'];
 			    $new[ 'breadcrumb-' . $k . '-url' ]  = $v['url'];
@@ -54,7 +54,7 @@ class Unified_Breadcrumbs {
 	            return;
             }
 
-	        $new = array();
+	        $new = get_blog_option( $blog, $this->settings_field, array() );
 	        foreach ( $allopts['_breadcrumb_list'] as $k=>$v ) {
 		        $new[ 'breadcrumb-' . $k . '-name' ] = $v['name'];
 		        $new[ 'breadcrumb-' . $k . '-url' ]  = $v['url'];
