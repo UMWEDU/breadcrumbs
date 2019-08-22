@@ -26,8 +26,10 @@ class Unified_Breadcrumbs {
      * @return void
 	 */
 	private function convert_genesis_settings( $blog=false ) {
+		$old_settings_field = defined( 'GENESIS_SETTINGS_FIELD' ) ? GENESIS_SETTINGS_FIELD : 'genesis-settings';
+
 		if ( empty( $blog ) || intval( $blog ) === intval( $GLOBALS['blog_id'] ) ) {
-			$oldopts = get_option( GENESIS_SETTINGS_FIELD, array() );
+			$oldopts = get_option( $old_settings_field, array() );
 			$newopts = get_option( $this->settings_field, array() );
 			if ( empty( $oldopts ) || ! array_key_exists( '_breadcrumb_list', $oldopts ) ) {
 				return;
@@ -41,12 +43,12 @@ class Unified_Breadcrumbs {
 			}
 
 			unset( $oldopts['_breadcrumb_list'] );
-			update_option( GENESIS_SETTINGS_FIELD, $oldopts );
+			update_option( $old_settings_field, $oldopts );
 			update_option( $this->settings_field, $newopts );
 
 			return;
 		} else {
-			$oldopts = get_blog_option( $blog, GENESIS_SETTINGS_FIELD, array() );
+			$oldopts = get_blog_option( $blog, $old_settings_field, array() );
 			$newopts = get_blog_option( $blog, $this->settings_field, array() );
 			if ( empty( $oldopts ) || ! array_key_exists( '_breadcrumb_list', $oldopts ) ) {
 				return;
@@ -60,7 +62,7 @@ class Unified_Breadcrumbs {
 			}
 
 			unset( $oldopts['_breadcrumb_list'] );
-			update_blog_option( $blog, GENESIS_SETTINGS_FIELD, $oldopts );
+			update_blog_option( $blog, $old_settings_field, $oldopts );
 			update_blog_option( $blog, $this->settings_field, $newopts );
 
 			return;
