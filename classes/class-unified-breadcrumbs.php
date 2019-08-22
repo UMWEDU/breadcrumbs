@@ -14,7 +14,8 @@ class Unified_Breadcrumbs {
 		$this->convert_genesis_settings();
 
 		add_filter( 'umw-outreach-genesis-customizer-config', array( $this, 'add_customizer_section' ) );
-		add_filter( 'umw-site-settings-sanitized', array( $this, 'sanitize_settings' ) );
+		add_filter( 'umw-site-settings-sanitized', array( $this, 'sanitize_settings' ), 10, 2 );
+		add_filter( 'umw-outreach-settings-defaults', array( $this, 'settings_defaults' ) );
 	}
 
 	/**
@@ -82,6 +83,23 @@ class Unified_Breadcrumbs {
 	    }
 
 		return $settings;
+    }
+
+	/**
+	 * Add the default settings for this plugin to the list of default settings for UMW Outreach
+	 * @param array $settings
+	 *
+	 * @access public
+	 * @since  2019.08
+	 * @return array the updated list of default settings
+	 */
+    public function settings_defaults( $settings=array() ) {
+    	for ( $i=1; $i<=3; $i++ ) {
+    		$settings['breadcrumb-' . $i . '-name'] = null;
+    		$settings['breadcrumb-' . $i . '-url'] = null;
+	    }
+
+    	return $settings;
     }
 
 	function after_setup_theme() {
