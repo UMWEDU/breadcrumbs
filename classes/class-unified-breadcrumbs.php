@@ -14,6 +14,7 @@ class Unified_Breadcrumbs {
 		$this->convert_genesis_settings();
 
 		add_filter( 'umw-outreach-genesis-customizer-config', array( $this, 'add_customizer_section' ) );
+		add_filter( 'umw-site-settings-sanitized', array( $this, 'sanitize_settings' ) );
 	}
 
 	/**
@@ -24,47 +25,63 @@ class Unified_Breadcrumbs {
      * @return void
 	 */
 	private function convert_genesis_settings( $blog=false ) {
-		$tmp_settings_field = defined( 'GENESIS_SETTINGS_FIELD' ) ? GENESIS_SETTINGS_FIELD : 'genesis-settings';
-	    if ( false === $blog || intval( $GLOBALS['blog_id'] ) === intval( $blog ) ) {
-	        $allopts = get_option( $tmp_settings_field, array() );
+		if ( empty( $blog ) || intval( $blog ) === intval( $GLOBALS['blog_id'] ) ) {
+			$oldopts = get_option( GENESIS_SETTINGS_FIELD, array() );
+			$newopts = get_option( $this->settings_field, array() );
+			if ( empty( $oldopts ) || ! array_key_exists( '_breadcrumb_list', $oldopts ) ) {
+				return;
+			}
 
-		    if ( ! array_key_exists( '_breadcrumb_list', $allopts ) || empty( $allopts['_breadcrumb_list'] ) ) {
-			    return;
-		    }
+			if ( is_array( $oldopts['_breadcrumb_list'] ) ) {
+				foreach ( $oldopts['_breadcrumb_list'] as $k => $v ) {
+					$newopts[ 'breadcrumb-' . $k . '-name' ] = $v['name'];
+					$newopts[ 'breadcrumb-' . $k . '-url' ]  = $v['url'];
+				}
+			}
 
-		    $new = get_option( $this->settings_field, array() );
-		    foreach ( $allopts['_breadcrumb_list'] as $k => $v ) {
-			    $new[ 'breadcrumb-' . $k . '-name' ] = $v['name'];
-			    $new[ 'breadcrumb-' . $k . '-url' ]  = $v['url'];
-		    }
+			unset( $oldopts['_breadcrumb_list'] );
+			update_option( GENESIS_SETTINGS_FIELD, $oldopts );
+			update_option( $this->settings_field, $newopts );
 
-		    unset( $allopts['_breadcrumb_list'] );
+			return;
+		} else {
+			$oldopts = get_blog_option( $blog, GENESIS_SETTINGS_FIELD, array() );
+			$newopts = get_blog_option( $blog, $this->settings_field, array() );
+			if ( empty( $oldopts ) || ! array_key_exists( '_breadcrumb_list', $oldopts ) ) {
+				return;
+			}
 
-		    if ( function_exists( 'genesis_update_settings' ) ) {
-			    genesis_update_settings( $new, $this->settings_field );
-		    } else {
-		    	update_option( $this->settings_field, $new );
-		    }
+			if ( is_array( $oldopts['_breadcrumb_list'] ) ) {
+				foreach ( $oldopts['_breadcrumb_list'] as $k => $v ) {
+					$newopts[ 'breadcrumb-' . $k . '-name' ] = $v['name'];
+					$newopts[ 'breadcrumb-' . $k . '-url' ]  = $v['url'];
+				}
+			}
 
-		    update_option( $tmp_settings_field, $allopts );
-	    } else {
-	        $allopts = get_blog_option( $blog, $tmp_settings_field, array() );
+			unset( $oldopts['_breadcrumb_list'] );
+			update_blog_option( $blog, GENESIS_SETTINGS_FIELD, $oldopts );
+			update_blog_option( $blog, $this->settings_field, $newopts );
 
-	        if ( ! array_key_exists( '_breadcrumb_list', $allopts ) ) {
-	            return;
-            }
+			return;
+		}
+    }
 
-	        $new = get_blog_option( $blog, $this->settings_field, array() );
-	        foreach ( $allopts['_breadcrumb_list'] as $k=>$v ) {
-		        $new[ 'breadcrumb-' . $k . '-name' ] = $v['name'];
-		        $new[ 'breadcrumb-' . $k . '-url' ]  = $v['url'];
-            }
+	/**
+	 * Sanitize our breadcrumbs settings
+	 * @param $settings array the existing settings that have already been sanitized
+	 * @param $values array the form values submitted
+	 *
+	 * @access public
+	 * @since  2019.08
+	 * @return array the sanitized options
+	 */
+    public function sanitize_settings( $settings, $values ) {
+    	for ( $i=1; $i<=3; $i++ ) {
+    		$settings['breadcrumb-' . $i . '-name'] = empty( $values['breadcrumb-' . $i . '-name'] ) ? null : sanitize_text_field( $values['breadcrumb-' . $i . '-name'] );
+    		$settings['breadcrumb-' . $i . '-url'] = esc_url( $values['breadcrumb-' . $i . '-url'] ) ? esc_url_raw( $values['breadcrumb-' . $i . '-url'] ) : null;
+	    }
 
-	        unset( $allopts['_breadcrumb_list'] );
-
-	        update_blog_option( $blog, $this->settings_field, $new );
-	        update_blog_option( $blog, $tmp_settings_field, $allopts );
-        }
+		return $settings;
     }
 
 	function after_setup_theme() {
@@ -92,87 +109,29 @@ class Unified_Breadcrumbs {
 		}
 
 		add_filter( 'genesis_breadcrumb_args', array( $this, 'breadcrumb_args' ) );
-		/*add_action( 'admin_init', array( $this, 'sanitizer_filters' ) );
-		add_filter( 'genesis_available_sanitizer_filters', array( $this, 'add_sanitizer_filter' ) );
-		add_filter( 'genesis_theme_settings_defaults', array( $this, 'settings_defaults' ) );*/
 	}
 
-	function add_sanitizer_filter( $filters = array() ) {
-		$filters['umw_breadcrumb_filter'] = array( $this, 'temp_sanitize_setting' );
+	/**
+	 * Retrieve and organize the breadcrumb settings
+	 *
+	 * @access public
+	 * @since  2019.08
+	 * @return array the organized array of settings
+	 */
+	public function get_settings() {
+    	$opts = get_option( $this->settings_field, array() );
 
-		return $filters;
-	}
+		$args = array();
+		for ( $i = 1; $i <= 3; $i ++ ) {
+			$args[ $i ]['name'] = array_key_exists( 'breadcrumb-' . $i . '-name', $opts ) ? $opts[ 'breadcrumb-' . $i . '-name' ] : null;
+			$args[ $i ]['url']  = array_key_exists( 'breadcrumb-' . $i . '-url', $opts ) ? esc_url( $opts[ 'breadcrumb-' . $i . '-url' ] ) : null;
 
-	function settings_defaults( $defaults = array() ) {
-		$settings['_breadcrumb_list']        = array();
-		$settings['_breadcrumb_parent_site'] = 0;
-
-		return $settings;
-	}
-
-	function sanitizer_filters() {
-		genesis_add_option_filter(
-			'absint',
-			$this->settings_field,
-			array(
-				'_breadcrumb_parent_site',
-			)
-		);
-		genesis_add_option_filter(
-			'umw_breadcrumb_filter',
-			$this->settings_field,
-			array(
-				'_breadcrumb_list',
-			)
-		);
-	}
-
-	function get_option( $key, $blog = false, $default = false ) {
-	    if ( '_breadcrumb_list' == $key ) {
-	        if ( false === $blog || intval( $GLOBALS['blog_id'] ) === intval( $blog ) ) {
-		        $allopts = get_option( GENESIS_SETTINGS_FIELD, array() );
-		        if ( array_key_exists( $key, $allopts ) ) {
-			        $this->convert_genesis_settings();
-		        }
-
-		        $opts = get_option( $this->settings_field, array() );
-	        } else {
-	            $allopts = get_blog_option( $blog, GENESIS_SETTINGS_FIELD, array() );
-	            if ( array_key_exists( $key, $allopts ) ) {
-	                $this->convert_genesis_settings( $blog );
-                }
-
-	            $opts = get_blog_option( $blog, $this->settings_field, array() );
-            }
-
-		    $args = array();
-		    for ( $i = 1; $i <= 3; $i ++ ) {
-			    $args[ $i ]['name'] = $opts[ 'breadcrumb-' . $i . '-name' ];
-			    $args[ $i ]['url']  = $opts[ 'breadcrumb-' . $i . '-url' ];
-
-			    if ( empty( $args[ $i ]['name'] ) && empty( $args[ $i ]['url'] ) ) {
-				    unset( $args[ $i ] );
-			    }
-		    }
-
-            return empty( $args ) ? $default : $args;
-	    }
-
-		/**
-		 * If we somehow failed to retrieve the options in their new format, look for them in their old format for now
-		 */
-		if ( empty( $blog ) || intval( $blog ) === $GLOBALS['blog_id'] ) {
-			$opt = genesis_get_option( $key );
-		} else {
-			$opt = get_blog_option( $blog, GENESIS_SETTINGS_FIELD );
-			if ( ! is_array( $opt ) || ! array_key_exists( $key, $opt ) ) {
-				$opt = $default;
-			} else {
-				$opt = $opt[ $key ];
+			if ( empty( $args[ $i ]['name'] ) && empty( $args[ $i ]['url'] ) ) {
+				unset( $args[ $i ] );
 			}
 		}
 
-		return $opt;
+		return empty( $args ) ? array() : $args;
 	}
 
 	function breadcrumb_args( $args = array() ) {
@@ -198,7 +157,7 @@ class Unified_Breadcrumbs {
 	}
 
 	function append_parents( $pre = '', $blog_id = null ) {
-		$parents = $this->get_option( '_breadcrumb_list' );
+    	$parents = $this->get_settings();
 		if ( empty( $parents ) || ! is_array( $parents ) ) {
 			return $pre;
 		}
@@ -214,28 +173,6 @@ class Unified_Breadcrumbs {
 		}
 
 		return $pre;
-	}
-
-	function temp_sanitize_setting( $val = array() ) {
-		if ( empty( $val ) ) {
-			return null;
-		}
-
-		/*if ( 2 == get_current_user_id() ) {
-			print( '<pre><code>' );
-			var_dump( $val );
-			print( '</code></pre>' );
-			wp_die( 'Stop here' );
-		}*/
-
-		$rt = array();
-		foreach ( $val as $k => $v ) {
-			if ( ! empty( $v['name'] ) && esc_url( $v['url'] ) ) {
-				$rt[ $k ] = array( 'name' => esc_attr( $v['name'] ), 'url' => esc_url( $v['url'] ) );
-			}
-		}
-
-		return $rt;
 	}
 
 	/**
