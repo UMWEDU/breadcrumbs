@@ -143,11 +143,9 @@ class Unified_Breadcrumbs {
 
 		$args = array();
 		for ( $i = 1; $i <= 3; $i ++ ) {
-			$args[ $i ]['name'] = array_key_exists( 'breadcrumb-' . $i . '-name', $opts ) ? $opts[ 'breadcrumb-' . $i . '-name' ] : null;
-			$args[ $i ]['url']  = array_key_exists( 'breadcrumb-' . $i . '-url', $opts ) ? esc_url( $opts[ 'breadcrumb-' . $i . '-url' ] ) : null;
-
-			if ( empty( $args[ $i ]['name'] ) && empty( $args[ $i ]['url'] ) ) {
-				unset( $args[ $i ] );
+			if ( array_key_exists( 'breadcrumb-' . $i . '-name', $opts ) && ! empty( $opts['breadcrumb-' . $i . '-name'] ) ) {
+				$args['breadcrumb-' . $i . '-name'] = $opts['breadcrumb-' . $i . '-name'];
+				$args['breadcrumb-' . $i . '-url'] = $opts['breadcrumb-' . $i . '-url'];
 			}
 		}
 
@@ -182,13 +180,9 @@ class Unified_Breadcrumbs {
 			return $pre;
 		}
 
-		foreach ( array_reverse( $parents, true ) as $p ) {
-			if ( ! array_key_exists( 'name', $p ) || ! array_key_exists( 'url', $p ) ) {
-				continue;
-			}
-
-			if ( ! empty( $p['name'] ) && esc_url( $p['url'] ) ) {
-				$pre = $this->bcargs['sep'] . sprintf( '<a href="%1$s" title="%2$s">%2$s</a>', esc_url( $p['url'] ), $p['name'] ) . $pre;
+		for ( $i=3; $i>=1; $i-- ) {
+			if ( array_key_exists( 'breadcrumb-' . $i . '-name', $parents ) && ! empty( $parents['breadcrumb-' . $i . '-name'] ) ) {
+				$pre = $this->bcargs['sep'] . sprintf( '<a href="%1$s" title="%2$s">%2$s</a>', esc_url( $parents['breadcrumb-' . $i . '-url'] ), $parents['breadcrumb-' . $i . '-name'] ) . $pre;
 			}
 		}
 
